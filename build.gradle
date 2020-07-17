@@ -1,0 +1,17 @@
+plugins {
+    id 'java'
+}
+
+group 'org.mikaelbdj'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+
+    // https://mvnrepository.com/artifact/org.sat4j/org.sat4j.core
+    compile group: 'org.sat4j', name: 'org.sat4j.core', version: '2.3.1'
+}
