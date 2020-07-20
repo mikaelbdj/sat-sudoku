@@ -27,7 +27,7 @@ public class SudokuSolver {
         }
     }
 
-    //same for all sudoku
+    //sudoku rules as clauses
     private static Vec<IVecInt> generateRuleClauses () {
         Vec<IVecInt> ruleClauses = new Vec<>();
         //row rules
@@ -46,10 +46,10 @@ public class SudokuSolver {
     private static Vec<IVecInt> generateNumberClauses (int[][] sudoku) {
         Vec<IVecInt> numberClauses = new Vec<>();
 
-        for (int i = 0; i < 9; i++) {
-            for (int j = 0; j < 9; j++) {
-                int value = sudoku[i][j];
-                int literal = i * j + value;
+        for (int row = 0; row < 9; row++) {
+            for (int col = 0; col < 9; col++) {
+                int value = sudoku[row][col];
+                int literal = (row * 9 * 9) + (col * 9) + value;
                 if (value != 0) {
                     numberClauses.push(new VecInt(new int[]{literal}));
                 }
