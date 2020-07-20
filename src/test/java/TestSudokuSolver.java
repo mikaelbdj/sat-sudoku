@@ -157,4 +157,47 @@ public class TestSudokuSolver {
         Assert.assertThat(clauses.size(), is(2997));
         Assert.assertThat(clauses.containsAll(uniquenessClauses), is(true));
     }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testCorrectDefinednessBoxRuleClauses () throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+        Method method = SudokuSolver.class.getDeclaredMethod("generateBoxRuleClauses");
+        method.setAccessible(true);
+
+        List<IVecInt> clauses = (List<IVecInt>) method.invoke(null);
+
+        IVecInt definednessClause0 = new VecInt(new int[]{1,10,19,82,91,100,163,172,181}); //at least one value of 1 in box 0
+        IVecInt definednessClause1 = new VecInt(new int[]{275,284,293,356,365,374,437,446,455}); //at least one value of 5 in box 4
+
+        Assert.assertThat(clauses.size(), is(2997));
+        Assert.assertThat(clauses.contains(definednessClause0), is(true));
+        Assert.assertThat(clauses.contains(definednessClause1), is(true));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testCorrectUniquenessBoxRuleClauses () throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+        Method method = SudokuSolver.class.getDeclaredMethod("generateBoxRuleClauses");
+        method.setAccessible(true);
+
+        List<IVecInt> clauses = (List<IVecInt>) method.invoke(null);
+
+        int[][] uniquenessClausesArray = new int[][] {
+                {-271,-280},{-271,-289},{-271,-352},{-271,-361},{-271,-370},{-271,-433},{-271,-442},{-271,-451},
+                {-280,-289},{-280,-352},{-280,-361},{-280,-370},{-280,-433},{-280,-442},{-280,-451},
+                {-289,-352},{-289,-361},{-289,-370},{-289,-433},{-289,-442},{-289,-451},
+                {-352,-361},{-352,-370},{-352,-433},{-352,-442},{-352,-451},
+                {-361,-370},{-361,-433},{-361,-442},{-361,-451},
+                {-370,-433},{-370,-442},{-370,-451},
+                {-433,-442},{-433,-451},
+                {-442,-451},
+        }; //at most one value of 1 in box 4
+        List<IVecInt> uniquenessClauses = new ArrayList<>();
+        for (int[] uniquenessClause : uniquenessClausesArray) {
+            uniquenessClauses.add(new VecInt(uniquenessClause));
+        }
+
+        Assert.assertThat(clauses.size(), is(2997));
+        Assert.assertThat(clauses.containsAll(uniquenessClauses), is(true));
+    }
 }
