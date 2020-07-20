@@ -10,12 +10,12 @@ public class SudokuSolver {
 
 
     public static void solve(int[][] sudoku) throws ContradictionException {
-        Vec<IVecInt> clauses = generateRuleClauses();
+        Vec<IVecInt> ruleClauses = generateRuleClauses();
         Vec<IVecInt> numberClauses = generateNumberClauses(sudoku);
 
         ISolver solver = SolverFactory.newDefault();
 
-        solver.addAllClauses(clauses);
+        solver.addAllClauses(ruleClauses);
         solver.addAllClauses(numberClauses);
 
 
@@ -24,6 +24,7 @@ public class SudokuSolver {
         try {
             if (problem.isSatisfiable()) {
                 problem.model();
+                //TODO: convert to sudoku
             }
         } catch (TimeoutException e) {
             e.printStackTrace();
@@ -40,12 +41,46 @@ public class SudokuSolver {
         }
 
         //column rules
+        List<IVecInt> columnRules = generateColumnRuleClauses();
+        for (IVecInt columnRule : columnRules) {
+            ruleClauses.push(columnRule);
+        }
 
         //box rules
 
         //cell rules
 
         return ruleClauses;
+    }
+
+    private static List<IVecInt> generateColumnRuleClauses() {
+        List<IVecInt> columnRules = new ArrayList<>();
+
+        //definedness
+        for (int col = 0; col < 9; col++) {
+            for (int value = 1; value <= 9; value++) {
+                int[] definedness = new int[9];
+                for (int row = 0; row < 9; row++) {
+                    definedness[row] = getLiteralFromCell(row, col, value);
+                }
+                columnRules.add(new VecInt(definedness));
+            }
+        }
+
+        //uniqueness
+        for (int col = 0; col < 9; col++) {
+            for (int value = 1; value <= 9; value++) {
+                for (int row1 = 0; row1 < 8; row1++) {
+                    for (int row2 = row1 + 1; row2 < 9; row2++) {
+                        int[] uniqueness = new int[2];
+                        uniqueness[0] = -getLiteralFromCell(row1, col, value);
+                        uniqueness[1] = -getLiteralFromCell(row2, col, value);
+                        columnRules.add(new VecInt(uniqueness));
+                    }
+                }
+            }
+        }
+        return columnRules;
     }
 
     private static List<IVecInt> generateRowRuleClauses() {
