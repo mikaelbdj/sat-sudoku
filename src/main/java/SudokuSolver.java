@@ -10,25 +10,42 @@ public class SudokuSolver {
 
     static final int SIZE = 9;
 
-    public static void solve(int[][] sudoku)  {
+    public static void solve(int[][] sudoku) {
         Vec<IVecInt> ruleClauses = generateRuleClauses();
         Vec<IVecInt> numberClauses = generateNumberClauses(sudoku);
 
+        int clauseAmount = ruleClauses.size() + numberClauses.size();
+
         ISolver solver = SolverFactory.newDefault();
 
-
-
-
         try {
+            long beforeClauses = System.currentTimeMillis();
             solver.addAllClauses(ruleClauses);
             solver.addAllClauses(numberClauses);
+            long afterClauses = System.currentTimeMillis();
+
             IProblem problem = solver;
             if (problem.isSatisfiable()) {
-                problem.model();
-                //TODO: convert to sudoku
+                long afterSolved = System.currentTimeMillis();
+
+                int[][] solution = getSudokuFromModel(problem.model());
+
+                System.out.printf("Generated %d SAT clauses in %d ms \nFound model in %d ms\n",clauseAmount, (afterClauses - beforeClauses), (afterSolved - afterClauses));
+                printSudoku(solution);
+            } else {
+                System.out.println("No solution");
             }
         } catch (TimeoutException | ContradictionException e) {
             e.printStackTrace();
+        }
+    }
+
+    private static void printSudoku(int[][] solution) {
+        for (int[] row : solution) {
+            for (int cell : row) {
+                System.out.print(cell + " ");
+            }
+            System.out.println();
         }
     }
 
@@ -69,7 +86,7 @@ public class SudokuSolver {
         for (int cell = 0; cell < SIZE * SIZE; cell++) {
             int[] definedness = new int[SIZE];
             for (int value = 1; value <= SIZE; value++) {
-                definedness[value - 1] = cell * 9 + value;
+                definedness[value - 1] = cell * SIZE + value;
             }
             cellRules.add(new VecInt(definedness));
         }
@@ -79,8 +96,8 @@ public class SudokuSolver {
             for (int value1 = 1; value1 < SIZE; value1++) {
                 for (int value2 = value1 + 1; value2 <= SIZE; value2++) {
                     int[] uniqueness = new int[2];
-                    uniqueness[0] = -(cell * 9 + value1);
-                    uniqueness[1] = -(cell * 9 + value2);
+                    uniqueness[0] = -(cell * SIZE + value1);
+                    uniqueness[1] = -(cell * SIZE + value2);
                     cellRules.add(new VecInt(uniqueness));
                 }
             }
@@ -210,6 +227,20 @@ public class SudokuSolver {
     }
 
     private static int getLiteralFromCell(int row, int col, int value) {
-        return (row * 9 * 9) + (col * 9) + value;
+        return (row * SIZE * SIZE) + (col * SIZE) + value;
     }
+
+    private static int[][] getSudokuFromModel(int[] model) {
+        int[][] sudoku = new int[SIZE][SIZE];
+        for (int literal : model) {
+            if (0 < literal) {
+                int row = (literal - 1) / (SIZE * SIZE);
+                int col = ((literal - 1) % (SIZE * SIZE)) / SIZE;
+                int value = literal - row * (SIZE * SIZE) - col * SIZE;
+                sudoku[row][col] = value;
+            }
+        }
+        return sudoku;
+    }
+
 }
