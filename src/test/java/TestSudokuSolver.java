@@ -200,4 +200,47 @@ public class TestSudokuSolver {
         Assert.assertThat(clauses.size(), is(2997));
         Assert.assertThat(clauses.containsAll(uniquenessClauses), is(true));
     }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testCorrectDefinednessCellRuleClauses () throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+        Method method = SudokuSolver.class.getDeclaredMethod("generateCellRuleClauses");
+        method.setAccessible(true);
+
+        List<IVecInt> clauses = (List<IVecInt>) method.invoke(null);
+
+        IVecInt definednessClause0 = new VecInt(new int[]{1,2,3,4,5,6,7,8,9}); //at least one value in cell 0
+        IVecInt definednessClause1 = new VecInt(new int[]{127,128,129,130,131,132,133,134,135}); //at least one value in cell 15
+
+        Assert.assertThat(clauses.size(), is(2997));
+        Assert.assertThat(clauses.contains(definednessClause0), is(true));
+        Assert.assertThat(clauses.contains(definednessClause1), is(true));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testCorrectUniquenessCellRuleClauses () throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+        Method method = SudokuSolver.class.getDeclaredMethod("generateCellRuleClauses");
+        method.setAccessible(true);
+
+        List<IVecInt> clauses = (List<IVecInt>) method.invoke(null);
+
+        int[][] uniquenessClausesArray = new int[][] {
+                {-10,-11},{-10,-12},{-10,-13},{-10,-14},{-10,-15},{-10,-16},{-10,-17},{-10,-18},
+                {-11,-12},{-11,-13},{-11,-14},{-11,-15},{-11,-16},{-11,-17},{-11,-18},
+                {-12,-13},{-12,-14},{-12,-15},{-12,-16},{-12,-17},{-12,-18},
+                {-13,-14},{-13,-15},{-13,-16},{-13,-17},{-13,-18},
+                {-14,-15},{-14,-16},{-14,-17},{-14,-18},
+                {-15,-16},{-15,-17},{-15,-18},
+                {-16,-17},{-16,-18},
+                {-17,-18},
+        }; //at most one value in cell 2
+        List<IVecInt> uniquenessClauses = new ArrayList<>();
+        for (int[] uniquenessClause : uniquenessClausesArray) {
+            uniquenessClauses.add(new VecInt(uniquenessClause));
+        }
+
+        Assert.assertThat(clauses.size(), is(2997));
+        Assert.assertThat(clauses.containsAll(uniquenessClauses), is(true));
+    }
 }

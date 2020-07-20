@@ -10,24 +10,24 @@ public class SudokuSolver {
 
     static final int SIZE = 9;
 
-    public static void solve(int[][] sudoku) throws ContradictionException {
+    public static void solve(int[][] sudoku)  {
         Vec<IVecInt> ruleClauses = generateRuleClauses();
         Vec<IVecInt> numberClauses = generateNumberClauses(sudoku);
 
         ISolver solver = SolverFactory.newDefault();
 
-        solver.addAllClauses(ruleClauses);
-        solver.addAllClauses(numberClauses);
 
 
-        IProblem problem = solver;
 
         try {
+            solver.addAllClauses(ruleClauses);
+            solver.addAllClauses(numberClauses);
+            IProblem problem = solver;
             if (problem.isSatisfiable()) {
                 problem.model();
                 //TODO: convert to sudoku
             }
-        } catch (TimeoutException e) {
+        } catch (TimeoutException | ContradictionException e) {
             e.printStackTrace();
         }
     }
@@ -54,8 +54,39 @@ public class SudokuSolver {
         }
 
         //cell rules
+        List<IVecInt> cellRules = generateCellRuleClauses();
+        for (IVecInt cellRule : cellRules) {
+            ruleClauses.push(cellRule);
+        }
 
         return ruleClauses;
+    }
+
+    private static List<IVecInt> generateCellRuleClauses() {
+        List<IVecInt> cellRules = new ArrayList<>();
+
+        //definedness
+        for (int cell = 0; cell < SIZE * SIZE; cell++) {
+            int[] definedness = new int[SIZE];
+            for (int value = 1; value <= SIZE; value++) {
+                definedness[value - 1] = cell * 9 + value;
+            }
+            cellRules.add(new VecInt(definedness));
+        }
+
+        //uniqueness
+        for (int cell = 0; cell < SIZE * SIZE; cell++) {
+            for (int value1 = 1; value1 < SIZE; value1++) {
+                for (int value2 = value1 + 1; value2 <= SIZE; value2++) {
+                    int[] uniqueness = new int[2];
+                    uniqueness[0] = -(cell * 9 + value1);
+                    uniqueness[1] = -(cell * 9 + value2);
+                    cellRules.add(new VecInt(uniqueness));
+                }
+            }
+        }
+
+        return cellRules;
     }
 
     private static List<IVecInt> generateBoxRuleClauses() {
@@ -78,7 +109,7 @@ public class SudokuSolver {
         //uniqueness
         for (int box = 0; box < SIZE; box++) {
             for (int value = 1; value <= SIZE; value++) {
-                for (int cell1 = 0; cell1 < SIZE-1; cell1++) {
+                for (int cell1 = 0; cell1 < SIZE - 1; cell1++) {
                     for (int cell2 = cell1 + 1; cell2 < SIZE; cell2++) {
                         int[] uniqueness = new int[2];
 
@@ -116,7 +147,7 @@ public class SudokuSolver {
         //uniqueness
         for (int col = 0; col < SIZE; col++) {
             for (int value = 1; value <= SIZE; value++) {
-                for (int row1 = 0; row1 < SIZE-1; row1++) {
+                for (int row1 = 0; row1 < SIZE - 1; row1++) {
                     for (int row2 = row1 + 1; row2 < SIZE; row2++) {
                         int[] uniqueness = new int[2];
                         uniqueness[0] = -getLiteralFromCell(row1, col, value);
@@ -146,7 +177,7 @@ public class SudokuSolver {
         //uniqueness
         for (int row = 0; row < SIZE; row++) {
             for (int value = 1; value <= SIZE; value++) {
-                for (int col1 = 0; col1 < SIZE-1; col1++) {
+                for (int col1 = 0; col1 < SIZE - 1; col1++) {
                     for (int col2 = col1 + 1; col2 < SIZE; col2++) {
                         int[] uniqueness = new int[2];
                         uniqueness[0] = -getLiteralFromCell(row, col1, value);
