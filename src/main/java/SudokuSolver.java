@@ -5,14 +5,20 @@ import org.sat4j.specs.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public class SudokuSolver {
 
-    static final int SIZE = 9;
 
-    public static void solve(int[][] sudoku) {
+    private final Sudoku sudoku;
+
+    public SudokuSolver (Sudoku sudoku) {
+        this.sudoku = sudoku;
+    }
+
+    public Optional<Sudoku> solve() {
         Vec<IVecInt> ruleClauses = generateRuleClauses();
-        Vec<IVecInt> numberClauses = generateNumberClauses(sudoku);
+        Vec<IVecInt> numberClauses = generateNumberClauses();
 
         int clauseAmount = ruleClauses.size() + numberClauses.size();
 
@@ -27,30 +33,21 @@ public class SudokuSolver {
             IProblem problem = solver;
             if (problem.isSatisfiable()) {
                 long afterSolved = System.currentTimeMillis();
-
-                int[][] solution = getSudokuFromModel(problem.model());
-
                 System.out.printf("Generated %d SAT clauses in %d ms \nFound model in %d ms\n",clauseAmount, (afterClauses - beforeClauses), (afterSolved - afterClauses));
-                printSudoku(solution);
+
+                return getSudokuFromModel(problem.model());
             } else {
-                System.out.println("No solution");
+                return Optional.empty();
             }
         } catch (TimeoutException | ContradictionException e) {
             e.printStackTrace();
+            return Optional.empty();
         }
     }
 
-    private static void printSudoku(int[][] solution) {
-        for (int[] row : solution) {
-            for (int cell : row) {
-                System.out.print(cell + " ");
-            }
-            System.out.println();
-        }
-    }
 
     //sudoku rules as clauses
-    private static Vec<IVecInt> generateRuleClauses() {
+    private Vec<IVecInt> generateRuleClauses() {
         Vec<IVecInt> ruleClauses = new Vec<>();
         //row rules
         List<IVecInt> rowRules = generateRowRuleClauses();
@@ -79,25 +76,26 @@ public class SudokuSolver {
         return ruleClauses;
     }
 
-    private static List<IVecInt> generateCellRuleClauses() {
+    private List<IVecInt> generateCellRuleClauses() {
         List<IVecInt> cellRules = new ArrayList<>();
+        int size = sudoku.getSize();
 
         //definedness
-        for (int cell = 0; cell < SIZE * SIZE; cell++) {
-            int[] definedness = new int[SIZE];
-            for (int value = 1; value <= SIZE; value++) {
-                definedness[value - 1] = cell * SIZE + value;
+        for (int cell = 0; cell < size * size; cell++) {
+            int[] definedness = new int[size];
+            for (int value = 1; value <= size; value++) {
+                definedness[value - 1] = cell * size + value;
             }
             cellRules.add(new VecInt(definedness));
         }
 
         //uniqueness
-        for (int cell = 0; cell < SIZE * SIZE; cell++) {
-            for (int value1 = 1; value1 < SIZE; value1++) {
-                for (int value2 = value1 + 1; value2 <= SIZE; value2++) {
+        for (int cell = 0; cell < size * size; cell++) {
+            for (int value1 = 1; value1 < size; value1++) {
+                for (int value2 = value1 + 1; value2 <= size; value2++) {
                     int[] uniqueness = new int[2];
-                    uniqueness[0] = -(cell * SIZE + value1);
-                    uniqueness[1] = -(cell * SIZE + value2);
+                    uniqueness[0] = -(cell * size + value1);
+                    uniqueness[1] = -(cell * size + value2);
                     cellRules.add(new VecInt(uniqueness));
                 }
             }
@@ -106,15 +104,17 @@ public class SudokuSolver {
         return cellRules;
     }
 
-    private static List<IVecInt> generateBoxRuleClauses() {
+    private List<IVecInt> generateBoxRuleClauses() {
         List<IVecInt> boxRules = new ArrayList<>();
-        int boxSize = (int) Math.sqrt(SIZE);
+        int size = sudoku.getSize();
+
+        int boxSize = (int) Math.sqrt(size);
 
         //definedness
-        for (int box = 0; box < SIZE; box++) {
-            for (int value = 1; value <= SIZE; value++) {
-                int[] definedness = new int[SIZE];
-                for (int cell = 0; cell < SIZE; cell++) {
+        for (int box = 0; box < size; box++) {
+            for (int value = 1; value <= size; value++) {
+                int[] definedness = new int[size];
+                for (int cell = 0; cell < size; cell++) {
                     int row = (box / boxSize) * boxSize + (cell / boxSize);
                     int col = (box % boxSize) * boxSize + (cell % boxSize);
                     definedness[cell] = getLiteralFromCell(row, col, value);
@@ -124,10 +124,10 @@ public class SudokuSolver {
         }
 
         //uniqueness
-        for (int box = 0; box < SIZE; box++) {
-            for (int value = 1; value <= SIZE; value++) {
-                for (int cell1 = 0; cell1 < SIZE - 1; cell1++) {
-                    for (int cell2 = cell1 + 1; cell2 < SIZE; cell2++) {
+        for (int box = 0; box < size; box++) {
+            for (int value = 1; value <= size; value++) {
+                for (int cell1 = 0; cell1 < size - 1; cell1++) {
+                    for (int cell2 = cell1 + 1; cell2 < size; cell2++) {
                         int[] uniqueness = new int[2];
 
                         int row1 = (box / boxSize) * boxSize + (cell1 / boxSize);
@@ -147,14 +147,15 @@ public class SudokuSolver {
         return boxRules;
     }
 
-    private static List<IVecInt> generateColumnRuleClauses() {
+    private List<IVecInt> generateColumnRuleClauses() {
         List<IVecInt> columnRules = new ArrayList<>();
+        int size = sudoku.getSize();
 
         //definedness
-        for (int col = 0; col < SIZE; col++) {
-            for (int value = 1; value <= SIZE; value++) {
-                int[] definedness = new int[SIZE];
-                for (int row = 0; row < SIZE; row++) {
+        for (int col = 0; col < size; col++) {
+            for (int value = 1; value <= size; value++) {
+                int[] definedness = new int[size];
+                for (int row = 0; row < size; row++) {
                     definedness[row] = getLiteralFromCell(row, col, value);
                 }
                 columnRules.add(new VecInt(definedness));
@@ -162,10 +163,10 @@ public class SudokuSolver {
         }
 
         //uniqueness
-        for (int col = 0; col < SIZE; col++) {
-            for (int value = 1; value <= SIZE; value++) {
-                for (int row1 = 0; row1 < SIZE - 1; row1++) {
-                    for (int row2 = row1 + 1; row2 < SIZE; row2++) {
+        for (int col = 0; col < size; col++) {
+            for (int value = 1; value <= size; value++) {
+                for (int row1 = 0; row1 < size - 1; row1++) {
+                    for (int row2 = row1 + 1; row2 < size; row2++) {
                         int[] uniqueness = new int[2];
                         uniqueness[0] = -getLiteralFromCell(row1, col, value);
                         uniqueness[1] = -getLiteralFromCell(row2, col, value);
@@ -177,14 +178,15 @@ public class SudokuSolver {
         return columnRules;
     }
 
-    private static List<IVecInt> generateRowRuleClauses() {
+    private List<IVecInt> generateRowRuleClauses() {
         List<IVecInt> rowRules = new ArrayList<>();
+        int size = sudoku.getSize();
 
         //definedness
-        for (int row = 0; row < SIZE; row++) {
-            for (int value = 1; value <= SIZE; value++) {
-                int[] definedness = new int[SIZE];
-                for (int col = 0; col < SIZE; col++) {
+        for (int row = 0; row < size; row++) {
+            for (int value = 1; value <= size; value++) {
+                int[] definedness = new int[size];
+                for (int col = 0; col < size; col++) {
                     definedness[col] = getLiteralFromCell(row, col, value);
                 }
                 rowRules.add(new VecInt(definedness));
@@ -192,10 +194,10 @@ public class SudokuSolver {
         }
 
         //uniqueness
-        for (int row = 0; row < SIZE; row++) {
-            for (int value = 1; value <= SIZE; value++) {
-                for (int col1 = 0; col1 < SIZE - 1; col1++) {
-                    for (int col2 = col1 + 1; col2 < SIZE; col2++) {
+        for (int row = 0; row < size; row++) {
+            for (int value = 1; value <= size; value++) {
+                for (int col1 = 0; col1 < size - 1; col1++) {
+                    for (int col2 = col1 + 1; col2 < size; col2++) {
                         int[] uniqueness = new int[2];
                         uniqueness[0] = -getLiteralFromCell(row, col1, value);
                         uniqueness[1] = -getLiteralFromCell(row, col2, value);
@@ -210,12 +212,13 @@ public class SudokuSolver {
 
 
     //clauses from the given numbers
-    private static Vec<IVecInt> generateNumberClauses(int[][] sudoku) {
+    private Vec<IVecInt> generateNumberClauses() {
         Vec<IVecInt> numberClauses = new Vec<>();
+        int size = sudoku.getSize();
 
-        for (int row = 0; row < SIZE; row++) {
-            for (int col = 0; col < SIZE; col++) {
-                int value = sudoku[row][col];
+        for (int row = 0; row < size; row++) {
+            for (int col = 0; col < size; col++) {
+                int value = sudoku.getCell(row,col);
                 int literal = getLiteralFromCell(row, col, value);
                 if (value != 0) {
                     numberClauses.push(new VecInt(new int[]{literal}));
@@ -226,21 +229,28 @@ public class SudokuSolver {
         return numberClauses;
     }
 
-    private static int getLiteralFromCell(int row, int col, int value) {
-        return (row * SIZE * SIZE) + (col * SIZE) + value;
+    private int getLiteralFromCell(int row, int col, int value) {
+        int size = sudoku.getSize();
+        return (row * size * size) + (col * size) + value;
     }
 
-    private static int[][] getSudokuFromModel(int[] model) {
-        int[][] sudoku = new int[SIZE][SIZE];
+    private Optional<Sudoku> getSudokuFromModel(int[] model) {
+        int size = sudoku.getSize();
+        int[][] sudoku = new int[size][size];
         for (int literal : model) {
             if (0 < literal) {
-                int row = (literal - 1) / (SIZE * SIZE);
-                int col = ((literal - 1) % (SIZE * SIZE)) / SIZE;
-                int value = literal - row * (SIZE * SIZE) - col * SIZE;
+                int row = (literal - 1) /  (size * size);
+                int col = ((literal - 1) %  (size * size)) / size;
+                int value = literal - row *  (size * size) - col * size;
                 sudoku[row][col] = value;
             }
         }
-        return sudoku;
+        try {
+            return Optional.of(new Sudoku(sudoku));
+        } catch (SudokuException e) {
+            e.printStackTrace();
+        }
+        return Optional.empty();
     }
 
 }

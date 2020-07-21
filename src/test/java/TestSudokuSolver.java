@@ -14,11 +14,12 @@ import static org.hamcrest.CoreMatchers.is;
 
 public class TestSudokuSolver {
 
-    int [][] sudoku;
+    Sudoku sudoku;
+    SudokuSolver sudokuSolver;
 
     @Before
-    public void setup () {
-        sudoku = new int[][]{
+    public void setup () throws SudokuException {
+        sudoku = new Sudoku(new int[][]{
                 {0, 0, 0,  0, 0, 0,  0, 0, 0},
                 {0, 0, 0,  0, 0, 0,  0, 0, 0},
                 {0, 0, 0,  0, 0, 0,  0, 0, 0},
@@ -30,26 +31,27 @@ public class TestSudokuSolver {
                 {0, 0, 0,  0, 0, 0,  0, 0, 0},
                 {0, 0, 0,  0, 0, 0,  0, 0, 0},
                 {0, 0, 0,  0, 0, 0,  0, 0, 0},
-        };
+        });
+        sudokuSolver = new SudokuSolver(sudoku);
     }
 
     @Test
     @SuppressWarnings("unchecked")
     public void testEmptySudokuGenerateNoNumberClauses () throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-        Method method = SudokuSolver.class.getDeclaredMethod("generateNumberClauses", int[][].class);
+        Method method = SudokuSolver.class.getDeclaredMethod("generateNumberClauses");
         method.setAccessible(true);
-        IVec<IVecInt> clauses = (IVec<IVecInt>) method.invoke(null, (Object) sudoku);
+        IVec<IVecInt> clauses = (IVec<IVecInt>) method.invoke(sudokuSolver);
 
         Assert.assertTrue(clauses.isEmpty());
     }
 
     @Test
     @SuppressWarnings("unchecked")
-    public void testSudokuWithNumbersGenerateCorrectNumberClauses () throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-        Method method = SudokuSolver.class.getDeclaredMethod("generateNumberClauses", int[][].class);
+    public void testSudokuWithNumbersGenerateCorrectNumberClauses () throws NoSuchMethodException, InvocationTargetException, IllegalAccessException, SudokuException {
+        Method method = SudokuSolver.class.getDeclaredMethod("generateNumberClauses");
         method.setAccessible(true);
 
-        sudoku = new int[][]{
+        sudoku = new Sudoku(new int[][]{
                 {0, 0, 3,  0, 0, 0,  0, 0, 0},
                 {0, 0, 0,  7, 0, 0,  0, 0, 0},
                 {0, 0, 0,  0, 0, 0,  0, 0, 0},
@@ -61,9 +63,10 @@ public class TestSudokuSolver {
                 {0, 0, 0,  5, 0, 0,  0, 0, 0},
                 {0, 0, 0,  0, 0, 0,  0, 0, 0},
                 {0, 0, 0,  0, 0, 0,  0, 0, 9},
-        };
+        });
 
-        IVec<IVecInt> clauses = (IVec<IVecInt>) method.invoke(null, (Object) sudoku);
+        sudokuSolver = new SudokuSolver(sudoku);
+        IVec<IVecInt> clauses = (IVec<IVecInt>) method.invoke(sudokuSolver);
 
         Assert.assertThat(clauses.size(), is(4));
         Assert.assertThat(clauses.get(0), is(new VecInt(new int[]{21})));
@@ -78,7 +81,7 @@ public class TestSudokuSolver {
         Method method = SudokuSolver.class.getDeclaredMethod("generateRowRuleClauses");
         method.setAccessible(true);
 
-        List<IVecInt> clauses = (List<IVecInt>) method.invoke(null);
+        List<IVecInt> clauses = (List<IVecInt>) method.invoke(sudokuSolver);
 
         IVecInt definednessClause0 = new VecInt(new int[]{1,10,19,28,37,46,55,64,73}); //at least one value of 1 in row 0
         IVecInt definednessClause1 = new VecInt(new int[]{86,95,104,113,122,131,140,149,158}); //at least one value of 5 in row 1
@@ -94,7 +97,7 @@ public class TestSudokuSolver {
         Method method = SudokuSolver.class.getDeclaredMethod("generateRowRuleClauses");
         method.setAccessible(true);
 
-        List<IVecInt> clauses = (List<IVecInt>) method.invoke(null);
+        List<IVecInt> clauses = (List<IVecInt>) method.invoke(sudokuSolver);
 
         int[][] uniquenessClausesArray = new int[][] {
                 {-1,-10},{-1,-19},{-1,-28},{-1,-37},{-1,-46},{-1,-55},{-1,-64},{-1,-73},
@@ -121,7 +124,7 @@ public class TestSudokuSolver {
         Method method = SudokuSolver.class.getDeclaredMethod("generateColumnRuleClauses");
         method.setAccessible(true);
 
-        List<IVecInt> clauses = (List<IVecInt>) method.invoke(null);
+        List<IVecInt> clauses = (List<IVecInt>) method.invoke(sudokuSolver);
 
         IVecInt definednessClause0 = new VecInt(new int[]{1,82,163,244,325,406,487,568,649}); //at least one value of 1 in col 0
         IVecInt definednessClause1 = new VecInt(new int[]{14,95,176,257,338,419,500,581,662}); //at least one value of 5 in col 1
@@ -137,7 +140,7 @@ public class TestSudokuSolver {
         Method method = SudokuSolver.class.getDeclaredMethod("generateColumnRuleClauses");
         method.setAccessible(true);
 
-        List<IVecInt> clauses = (List<IVecInt>) method.invoke(null);
+        List<IVecInt> clauses = (List<IVecInt>) method.invoke(sudokuSolver);
 
         int[][] uniquenessClausesArray = new int[][] {
                 {-1,-82},{-1,-163},{-1,-244},{-1,-325},{-1,-406},{-1,-487},{-1,-568},{-1,-649},
@@ -164,7 +167,7 @@ public class TestSudokuSolver {
         Method method = SudokuSolver.class.getDeclaredMethod("generateBoxRuleClauses");
         method.setAccessible(true);
 
-        List<IVecInt> clauses = (List<IVecInt>) method.invoke(null);
+        List<IVecInt> clauses = (List<IVecInt>) method.invoke(sudokuSolver);
 
         IVecInt definednessClause0 = new VecInt(new int[]{1,10,19,82,91,100,163,172,181}); //at least one value of 1 in box 0
         IVecInt definednessClause1 = new VecInt(new int[]{275,284,293,356,365,374,437,446,455}); //at least one value of 5 in box 4
@@ -180,7 +183,7 @@ public class TestSudokuSolver {
         Method method = SudokuSolver.class.getDeclaredMethod("generateBoxRuleClauses");
         method.setAccessible(true);
 
-        List<IVecInt> clauses = (List<IVecInt>) method.invoke(null);
+        List<IVecInt> clauses = (List<IVecInt>) method.invoke(sudokuSolver);
 
         int[][] uniquenessClausesArray = new int[][] {
                 {-271,-280},{-271,-289},{-271,-352},{-271,-361},{-271,-370},{-271,-433},{-271,-442},{-271,-451},
@@ -207,7 +210,7 @@ public class TestSudokuSolver {
         Method method = SudokuSolver.class.getDeclaredMethod("generateCellRuleClauses");
         method.setAccessible(true);
 
-        List<IVecInt> clauses = (List<IVecInt>) method.invoke(null);
+        List<IVecInt> clauses = (List<IVecInt>) method.invoke(sudokuSolver);
 
         IVecInt definednessClause0 = new VecInt(new int[]{1,2,3,4,5,6,7,8,9}); //at least one value in cell 0
         IVecInt definednessClause1 = new VecInt(new int[]{127,128,129,130,131,132,133,134,135}); //at least one value in cell 15
@@ -223,7 +226,7 @@ public class TestSudokuSolver {
         Method method = SudokuSolver.class.getDeclaredMethod("generateCellRuleClauses");
         method.setAccessible(true);
 
-        List<IVecInt> clauses = (List<IVecInt>) method.invoke(null);
+        List<IVecInt> clauses = (List<IVecInt>) method.invoke(sudokuSolver);
 
         int[][] uniquenessClausesArray = new int[][] {
                 {-10,-11},{-10,-12},{-10,-13},{-10,-14},{-10,-15},{-10,-16},{-10,-17},{-10,-18},
