@@ -11,40 +11,60 @@ public class SudokuSolver {
 
 
     private final Sudoku sudoku;
+    private int clausesCount;
+    private final List<ThermometerRule> thermometerRules;
 
     public SudokuSolver (Sudoku sudoku) {
         this.sudoku = sudoku;
+        thermometerRules = new ArrayList<>();
+        clausesCount = 0;
     }
 
     public Optional<Sudoku> solve() {
-        Vec<IVecInt> ruleClauses = generateRuleClauses();
-        Vec<IVecInt> numberClauses = generateNumberClauses();
-
-        int clauseAmount = ruleClauses.size() + numberClauses.size();
-
-        ISolver solver = SolverFactory.newDefault();
+        long beforeClauses = System.currentTimeMillis();
+        IProblem problem = generateSATProblem();
+        long afterClauses = System.currentTimeMillis();
 
         try {
-            long beforeClauses = System.currentTimeMillis();
-            solver.addAllClauses(ruleClauses);
-            solver.addAllClauses(numberClauses);
-            long afterClauses = System.currentTimeMillis();
-
-            IProblem problem = solver;
             if (problem.isSatisfiable()) {
                 long afterSolved = System.currentTimeMillis();
-                System.out.printf("Generated %d SAT clauses in %d ms \nFound model in %d ms\n",clauseAmount, (afterClauses - beforeClauses), (afterSolved - afterClauses));
+                System.out.printf("Generated %d SAT clauses in %d ms \nFound model in %d ms\n",clausesCount, (afterClauses - beforeClauses), (afterSolved - afterClauses));
 
                 return getSudokuFromModel(problem.model());
             } else {
                 return Optional.empty();
             }
-        } catch (TimeoutException | ContradictionException e) {
+        } catch (TimeoutException e) {
             e.printStackTrace();
             return Optional.empty();
         }
     }
 
+    private IProblem generateSATProblem () {
+        IVec<IVecInt> ruleClauses = generateRuleClauses();
+        IVec<IVecInt> numberClauses = generateNumberClauses();
+
+        ISolver solver = SolverFactory.newDefault();
+
+        try {
+            solver.addAllClauses(ruleClauses);
+            solver.addAllClauses(numberClauses);
+            clausesCount = ruleClauses.size() + numberClauses.size();
+            for (ThermometerRule thermometerRule : thermometerRules) {
+                IVec<IVecInt> thermometerClauses = thermometerRule.generateThermometerRuleClauses();
+                solver.addAllClauses(thermometerClauses);
+                clausesCount += thermometerClauses.size();
+            }
+        } catch (ContradictionException e) {
+            e.printStackTrace();
+        }
+
+        return solver;
+    }
+
+    public void addThermometerRule (ThermometerRule thermometerRule) {
+        thermometerRules.add(thermometerRule);
+    }
 
     //sudoku rules as clauses
     private Vec<IVecInt> generateRuleClauses() {
@@ -218,7 +238,7 @@ public class SudokuSolver {
 
         for (int row = 0; row < size; row++) {
             for (int col = 0; col < size; col++) {
-                int value = sudoku.getCell(row,col);
+                int value = sudoku.getValue(row,col);
                 int literal = getLiteralFromCell(row, col, value);
                 if (value != 0) {
                     numberClauses.push(new VecInt(new int[]{literal}));

@@ -20,7 +20,7 @@ public class Sudoku {
         if (flatValues().stream().anyMatch(value -> size < value || value < 0)) throw new SudokuException("Sudoku contains too large or negative values");
     }
 
-    public int getCell (int row, int col) {
+    public int getValue(int row, int col) {
         return sudoku[row][col];
     }
 
@@ -41,7 +41,7 @@ public class Sudoku {
         for (int row = 0; row < size; row++) {
             stringBuilder.append("| ");
             for (int col = 0; col < size; col++) {
-                int value  = getCell(row, col);
+                int value  = getValue(row, col);
                 boolean boxLine = ((col + 1) % boxSize) == 0;
                 stringBuilder.append(value).append(size <= 9 || 9 < value ? " " : "  ");
                 stringBuilder.append(boxLine ? "| " : "");
